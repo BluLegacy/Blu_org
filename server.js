@@ -2612,10 +2612,21 @@ async function getActiveTeamCount(referralCode) {
       
       const stats = [];
       for (const u of users) {
-        const totalBoards = await BoostingBoard.countDocuments({ ownerId: u._id });
-        const cycledBoards = await BoostingBoard.countDocuments({ ownerId: u._id, isCycled: true });
-        const boostingIncomeTx = await Transaction.find({ userId: u._id, category: 'BOOSTING_INCOME', type: 'credit', status: 'Approved' });
-        const totalIncome = boostingIncomeTx.reduce((sum, tx) => sum + tx.amount, 0);
+        let totalBoards = 0;
+        let cycledBoards = 0;
+        let boostingIncomeTx = [];
+
+        if (mongoose.Types.ObjectId.isValid(u._id)) {
+          totalBoards = await BoostingBoard.countDocuments({ ownerId: u._id });
+          cycledBoards = await BoostingBoard.countDocuments({ ownerId: u._id, isCycled: true });
+          boostingIncomeTx = await Transaction.find({ userId: u._id, category: 'BOOSTING_INCOME', type: 'credit', status: 'Approved' });
+        } else {
+          totalBoards = await mongoose.connection.db.collection('boostingboards').countDocuments({ ownerId: u._id });
+          cycledBoards = await mongoose.connection.db.collection('boostingboards').countDocuments({ ownerId: u._id, isCycled: true });
+          boostingIncomeTx = await mongoose.connection.db.collection('transactions').find({ userId: u._id, category: 'BOOSTING_INCOME', type: 'credit', status: 'Approved' }).toArray();
+        }
+
+        const totalIncome = boostingIncomeTx.reduce((sum, tx) => sum + (tx.amount || 0), 0);
 
         stats.push({
           dbId: u._id ? u._id.toString() : (u.id ? u.id.toString() : ''),
