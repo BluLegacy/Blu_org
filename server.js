@@ -1613,6 +1613,16 @@ async function getActiveTeamCount(referralCode) {
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
 
+  app.delete('/api/admin/deposit-requests/processed', authenticateToken, adminOnly, async (req, res) => {
+    try {
+      const result = await DepositRequest.deleteMany({ status: { $in: ['Approved', 'Rejected'] } });
+      broadcastAdminStats();
+      res.json({ success: true, message: `Successfully deleted ${result.deletedCount} processed deposit requests and their attached screenshots to free up storage.` });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   // ======== END NEW DEPOSIT SYSTEM ========
 
   app.post('/api/user/activate-id', authenticateToken, async (req, res) => {

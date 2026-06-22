@@ -1033,6 +1033,9 @@
                 <p>Review and approve or reject user COIN deposit submissions</p>
               </div>
               <div class="table-actions">
+                <button class="btn btn-danger" style="margin-right: 10px; font-size: 0.8rem; padding: 6px 12px; background: rgba(255, 59, 48, 0.1); color: var(--danger); border: 1px solid rgba(255,59,48,0.3);" onclick="clearProcessedDeposits()">
+                  <i data-lucide="trash-2" style="width: 14px; height: 14px; margin-right: 4px;"></i> Clear Processed (Free Storage)
+                </button>
                 <select class="filter-select" id="deposit-filter" onchange="filterDeposits()">
                   <option value="">All Status</option>
                   <option value="Pending">Pending</option>
@@ -2909,6 +2912,26 @@
       }
     } catch (e) {
       showToast('Error', e.message, 'error');
+    }
+  }
+
+  async function clearProcessedDeposits() {
+    if (!confirm("Are you sure you want to delete ALL Approved and Rejected deposit requests?\n\nThis will permanently delete their heavy screenshots and free up your database storage.\n\nThis action cannot be undone.")) return;
+    
+    try {
+      const res = await fetch('/api/admin/deposit-requests/processed', {
+        method: 'DELETE',
+        headers: { 'Authorization': 'Bearer ' + adminToken }
+      });
+      const data = await res.json();
+      if (data && data.success) {
+        toast(data.message, 'success');
+        loadDepositRequests();
+      } else {
+        toast(data?.error || 'Failed to clear requests.', 'error');
+      }
+    } catch (e) {
+      toast('Server error clearing requests.', 'error');
     }
   }
   // ============================================================
