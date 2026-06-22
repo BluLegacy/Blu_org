@@ -99,6 +99,17 @@
           <a href="#" id="forgot-password-link" class="sky-text-hover">Forgot Password?</a>
         </div>
 
+        <div class="input-group" id="captcha-group" style="margin-top: 15px; margin-bottom: 15px;">
+          <label id="captcha-question">Security Check: What is ? + ?</label>
+          <div class="input-wrapper">
+            <i data-lucide="shield-check" class="input-icon"></i>
+            <input type="number" id="login-captcha" required placeholder="Enter the sum">
+            <button type="button" id="refresh-captcha" style="background:none;border:none;cursor:pointer;position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--text-secondary);" title="Refresh CAPTCHA">
+              <i data-lucide="refresh-cw" style="width:16px;height:16px;"></i>
+            </button>
+          </div>
+        </div>
+
         <button type="submit" class="btn btn-primary btn-full sky-gradient-btn">
           <span>Sign In Securely</span>
           <i data-lucide="arrow-right"></i>

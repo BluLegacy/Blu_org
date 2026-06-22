@@ -478,11 +478,36 @@ document.addEventListener('DOMContentLoaded', () => {
   // AUTHENTICATION LOGIC & SEEDS
   // ==========================================================================
 
+  window.captchaAnswer = 0;
+  window.generateCaptcha = function() {
+    const num1 = Math.floor(Math.random() * 10) + 1;
+    const num2 = Math.floor(Math.random() * 10) + 1;
+    window.captchaAnswer = num1 + num2;
+    const questionEl = document.getElementById('captcha-question');
+    if (questionEl) questionEl.innerText = `Security Check: What is ${num1} + ${num2}?`;
+    const inputEl = document.getElementById('login-captcha');
+    if (inputEl) inputEl.value = '';
+  };
+
+  // Generate initial captcha
+  window.generateCaptcha();
+  const refreshCaptchaBtn = document.getElementById('refresh-captcha');
+  if (refreshCaptchaBtn) {
+    refreshCaptchaBtn.onclick = () => window.generateCaptcha();
+  }
+
   loginForm.onsubmit = async (e) => {
     e.preventDefault();
     const identifier = document.getElementById('login-identifier').value.trim();
     const password = document.getElementById('login-password').value;
     const rememberMe = document.getElementById('remember-me').checked;
+    const captchaInput = document.getElementById('login-captcha').value;
+
+    if (parseInt(captchaInput) !== window.captchaAnswer) {
+      showToast("Security Check Failed", "Incorrect answer. Please try again.", "error");
+      window.generateCaptcha();
+      return;
+    }
 
     try {
       const data = await apiCall('/api/auth/login', 'POST', { identifier, password });
