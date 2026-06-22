@@ -2017,48 +2017,25 @@
 
 
             <div id="boost-board-container" class="hidden">
-              <h4 style="margin-bottom:15px; color:var(--sky-primary); text-align:center;">Your Current Active Board: <span id="boost-board-id" style="color:white;"></span></h4>
-              
-              <!-- CSS Tree Graph -->
-              <style>
-              .matrix-tree { display: flex; justify-content: center; overflow-x: auto; padding: 20px 0; }
-              .matrix-tree ul { padding-top: 20px; position: relative; transition: all 0.5s; display: flex; padding-left: 0; margin: 0; }
-              .matrix-tree li { float: left; text-align: center; list-style-type: none; position: relative; padding: 20px 10px 0 10px; transition: all 0.5s; }
-              .matrix-tree li::before, .matrix-tree li::after { content: ''; position: absolute; top: 0; right: 50%; border-top: 2px solid rgba(255,255,255,0.2); width: 50%; height: 20px; }
-              .matrix-tree li::after { right: auto; left: 50%; border-left: 2px solid rgba(255,255,255,0.2); }
-              .matrix-tree li:only-child::after, .matrix-tree li:only-child::before { display: none; }
-              .matrix-tree li:only-child { padding-top: 0; }
-              .matrix-tree li:first-child::before, .matrix-tree li:last-child::after { border: 0 none; }
-              .matrix-tree li:last-child::before { border-right: 2px solid rgba(255,255,255,0.2); border-radius: 0 5px 0 0; }
-              .matrix-tree li:first-child::after { border-radius: 5px 0 0 0; }
-              .matrix-tree ul ul::before { content: ''; position: absolute; top: 0; left: 50%; border-left: 2px solid rgba(255,255,255,0.2); width: 0; height: 20px; transform: translateX(-1px); }
-              .matrix-node { background: var(--border-glass); border: 1px solid rgba(255,255,255,0.1); padding: 12px; border-radius: 12px; min-width: 90px; color: var(--text-muted); font-size: 12px; display: inline-block; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
-              .matrix-node.filled { background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%); color: #fff; border-color: rgba(0,198,255,0.5); }
-              .matrix-node.root { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #fff; border-color: #fbbf24; font-size: 14px; font-weight: bold; }
-              </style>
+              <div class="glassmorphism" style="max-width: 500px; margin: 0 auto; padding: 25px; border-radius: 16px; border: 1px solid rgba(0, 198, 255, 0.3);">
+                <div style="text-align: center; margin-bottom: 20px;">
+                  <h4 style="color: var(--gold); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px;">Boosting Cycle</h4>
+                  <div style="font-size: 12px; color: var(--text-muted);">Board ID: <span id="boost-board-id" style="color: white; font-family: monospace;"></span></div>
+                </div>
 
-              <div class="matrix-tree">
-                <ul>
-                  <li>
-                    <div class="matrix-node root">YOU<br><span style="font-size:10px;opacity:0.8;">Root Level</span></div>
-                    <ul>
-                      <li>
-                        <div id="boost-pos-1" class="matrix-node">1<br>Empty</div>
-                        <ul>
-                          <li><div id="boost-pos-3" class="matrix-node">3<br>Empty</div></li>
-                          <li><div id="boost-pos-4" class="matrix-node">4<br>Empty</div></li>
-                        </ul>
-                      </li>
-                      <li>
-                        <div id="boost-pos-2" class="matrix-node">2<br>Empty</div>
-                        <ul>
-                          <li><div id="boost-pos-5" class="matrix-node">5<br>Empty</div></li>
-                          <li><div id="boost-pos-6" class="matrix-node">6<br>Empty</div></li>
-                        </ul>
-                      </li>
-                    </ul>
-                  </li>
-                </ul>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 20px; font-weight: bold; font-size: 14px;">
+                  <div style="color: var(--accent-green);">Completed: <span id="boost-completed">0</span> / 6</div>
+                  <div style="color: var(--accent-red);">Pending: <span id="boost-pending">6</span></div>
+                </div>
+
+                <div id="boost-slots" style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 15px; margin-bottom: 20px;">
+                  <!-- Slots will be injected by app.js -->
+                </div>
+
+                <div style="display: flex; justify-content: space-between; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; font-size: 13px;">
+                  <div style="color: var(--sky-primary);">Global Position: <strong id="boost-global-pos" style="color: white;">#--</strong></div>
+                  <div style="color: var(--text-muted);">Status: <strong id="boost-status" style="color: var(--accent-gold);">In Progress</strong></div>
+                </div>
               </div>
             </div>
 

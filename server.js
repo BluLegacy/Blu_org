@@ -3038,6 +3038,8 @@ async function getActiveTeamCount(referralCode) {
       const allBoardsCount = await BoostingBoard.countDocuments();
       const globalPool = allBoardsCount * 50;
 
+      const globalPosition = await BoostingBoard.countDocuments({ _id: { $lte: currentBoard._id } });
+
       res.json({
         hasBoard: true,
         boardId: currentBoard.boardId,
@@ -3045,7 +3047,8 @@ async function getActiveTeamCount(referralCode) {
         members: members,
         totalCycles,
         totalIncome,
-        globalPool
+        globalPool,
+        globalPosition
       });
     } catch (err) {
       console.error(err);

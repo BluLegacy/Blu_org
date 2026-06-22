@@ -867,7 +867,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const screenshot = document.getElementById('deposit-screenshot-base64').value;
 
         if (!txid) { showToast('Missing TXID', 'Please enter your blockchain transaction hash.', 'error'); return; }
-        if (parseFloat(amount) < 10) { showToast('Invalid Amount', 'Minimum deposit is 10.00 COIN COIN.', 'error'); return; }
+        if (parseFloat(amount) < 1000) { showToast('Invalid Amount', 'Minimum deposit is 1000.00 COIN.', 'error'); return; }
 
         try {
           btn.disabled = true;
@@ -1092,26 +1092,43 @@ document.addEventListener('DOMContentLoaded', () => {
         const boardIdEl = document.getElementById('boost-board-id');
         if (boardIdEl) boardIdEl.textContent = res.boardId;
         
-        // Reset positions
-        for (let i = 1; i <= 6; i++) {
-          const el = document.getElementById('boost-pos-' + i);
-          if (el) {
-            el.innerHTML = i + '<br>Empty';
-            el.className = 'matrix-node';
-            el.removeAttribute('style');
-          }
+        const completedCount = res.members ? res.members.length : 0;
+        const pendingCount = Math.max(0, 6 - completedCount);
+        
+        document.getElementById('boost-completed').textContent = completedCount;
+        document.getElementById('boost-pending').textContent = pendingCount;
+        
+        const globalPosEl = document.getElementById('boost-global-pos');
+        if (globalPosEl) globalPosEl.textContent = '#' + (res.globalPosition || '--');
+        
+        const statusEl = document.getElementById('boost-status');
+        if (statusEl) {
+          statusEl.textContent = res.isCycled ? 'Completed' : 'In Progress';
+          statusEl.style.color = res.isCycled ? 'var(--accent-green)' : 'var(--accent-gold)';
         }
         
-        // Fill positions
-        if (res.members && res.members.length > 0) {
-          res.members.forEach(m => {
-            const el = document.getElementById('boost-pos-' + m.position);
-            if (el) {
-              el.innerHTML = `<strong>${m.userId}</strong><br><span style="font-size:10px;">${m.name}</span>`;
-              el.className = 'matrix-node filled';
-              el.removeAttribute('style');
-            }
-          });
+        const slotsEl = document.getElementById('boost-slots');
+        if (slotsEl) {
+          let slotsHtml = '';
+          const labels = ['A', 'B', 'C', 'D', 'E', 'F'];
+          
+          const memberMap = {};
+          if (res.members) {
+            res.members.forEach(m => { memberMap[m.position] = m; });
+          }
+          
+          for (let i = 1; i <= 6; i++) {
+            const letter = labels[i-1];
+            const isFilled = !!memberMap[i];
+            
+            slotsHtml += `
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: ${i < 6 ? '1px dashed rgba(255,255,255,0.1)' : 'none'};">
+                <span style="font-weight: bold; font-family: var(--font-mono); color: ${isFilled ? '#fff' : 'var(--text-muted)'}; font-size: 15px;">Node ${letter}</span>
+                <span style="font-size: 16px;">${isFilled ? '✅' : '⏳'}</span>
+              </div>
+            `;
+          }
+          slotsEl.innerHTML = slotsHtml;
         }
       }
     } catch (e) {
@@ -1599,11 +1616,11 @@ document.addEventListener('DOMContentLoaded', () => {
           walletIdBadge.className = isPending ? 'badge badge-warning' : 'badge badge-danger';
           
           walletActivationBlock.innerHTML = `
-            <button class="btn btn-primary btn-full sky-gradient-btn" id="activate-id-btn" ${db.fundBalance < 10 ? 'style="opacity: 0.65;"' : ''}>
-              <span>Activate ID Now (10.00 COIN)</span>
+            <button class="btn btn-primary btn-full sky-gradient-btn" id="activate-id-btn" ${db.fundBalance < 1000 ? 'style="opacity: 0.65;"' : ''}>
+              <span>Activate ID Now (1000.00 COIN)</span>
               <i data-lucide="shield-check"></i>
             </button>
-            ${db.fundBalance < 10 
+            ${db.fundBalance < 1000 
               ? `<p style="color:var(--accent-red); font-size:11px; margin-top:8px; text-align:center; font-family:var(--font-mono);">Fund Wallet Balance (${db.fundBalance.toFixed(2)} COIN) is insufficient. Please deposit.</p>` 
               : `<p style="color:var(--accent-green); font-size:11px; margin-top:8px; text-align:center; font-family:var(--font-mono);">Fund Balance is ready. Click above to activate.</p>`
             }
@@ -1614,8 +1631,8 @@ document.addEventListener('DOMContentLoaded', () => {
           const actBtn = document.getElementById('activate-id-btn');
           if (actBtn) {
             actBtn.onclick = async function() {
-              if (db.fundBalance < 10) {
-                showToast("Insufficient Balance", "Your Fund Wallet balance is less than 10.00 COIN COIN. Please complete deposit verification first.", "error");
+              if (db.fundBalance < 1000) {
+                showToast("Insufficient Balance", "Your Fund Wallet balance is less than 1000.00 COIN. Please complete deposit verification first.", "error");
                 return;
               }
               try {
@@ -1633,7 +1650,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (verifiedCheckmark) verifiedCheckmark?.classList.remove('hidden');
               } catch (e) {
                 this.disabled = false;
-                this.innerHTML = '<span>Activate ID Now (10.00 COIN)</span><i data-lucide="shield-check"></i>';
+                this.innerHTML = '<span>Activate ID Now (1000.00 COIN)</span><i data-lucide="shield-check"></i>';
                 lucide.createIcons();
                 showToast("Activation Failed", e.message, "error");
               }
@@ -2430,7 +2447,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       pendingList.forEach(u => {
         const req = u.activationRequest || {};
-        const depositAmt = req.depositAmount ? `${parseFloat(req.depositAmount).toFixed(2)} COIN` : '10.00 COIN';
+        const depositAmt = req.depositAmount ? `${parseFloat(req.depositAmount).toFixed(2)} COIN` : '1000.00 COIN';
         tbody.innerHTML += `
           <tr>
             <td class="font-space text-sky">${u.userId}</td>
@@ -3271,7 +3288,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 3. Profit shares
     const activatedUsersCount = db.users.filter(u => u.idStatus === 'Activated').length;
-    const totalFeesCollected = activatedUsersCount * 10.00;
+    const totalFeesCollected = activatedUsersCount * 1000.00;
     
     let totalCommissionsDistributed = 0;
     db.auditLogs.forEach(t => {
@@ -3522,12 +3539,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             <!-- Deposit Amount Field -->
             <div class="input-group" style="margin-bottom:12px;">
-              <label style="font-size:11px; margin-bottom:4px; display:block; color:var(--sky-primary); font-weight:600;">Deposit Amount (Min 10.00 COIN COIN)*</label>
+              <label style="font-size:11px; margin-bottom:4px; display:block; color:var(--sky-primary); font-weight:600;">Deposit Amount (Min 1000.00 COIN)*</label>
               <div style="position:relative;">
                 <span style="position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--sky-primary); font-weight:700; font-size:14px;">$</span>
-                <input type="number" id="act-deposit-amount" required min="10" step="0.01" placeholder="10.00" style="width:100%; padding:8px 8px 8px 24px; background:rgba(212,175,55,0.08); border:1px solid rgba(212,175,55,0.3); border-radius:4px; color:var(--text-primary); font-size:14px; font-weight:600;">
+                <input type="number" id="act-deposit-amount" required min="1000" step="0.01" placeholder="1000.00" style="width:100%; padding:8px 8px 8px 24px; background:rgba(212,175,55,0.08); border:1px solid rgba(212,175,55,0.3); border-radius:4px; color:var(--text-primary); font-size:14px; font-weight:600;">
               </div>
-              <p style="font-size:10px; color:var(--text-muted); margin-top:4px;">You can deposit any amount ≥ 10 COIN. Activation fee (10 COIN) is deducted. Remainder goes to your wallet balance.</p>
+              <p style="font-size:10px; color:var(--text-muted); margin-top:4px;">You can deposit any amount ≥ 1000 COIN. Activation fee (1000 COIN) is deducted. Remainder goes to your wallet balance.</p>
             </div>
 
             <!-- Auto-populated Payment Date & Time -->
@@ -3586,8 +3603,8 @@ document.addEventListener('DOMContentLoaded', () => {
           const payTime = document.getElementById('act-pay-time').value;
           const depositAmount = parseFloat(document.getElementById('act-deposit-amount').value);
 
-          if (isNaN(depositAmount) || depositAmount < 10) {
-            showToast("Invalid Amount", "Minimum deposit amount is 10.00 COIN COIN.", "error");
+          if (isNaN(depositAmount) || depositAmount < 1000) {
+            showToast("Invalid Amount", "Minimum deposit amount is 1000.00 COIN.", "error");
             return;
           }
 
@@ -3938,10 +3955,10 @@ document.addEventListener('DOMContentLoaded', () => {
           successBanner?.classList.remove('hidden');
         } else {
           successBanner?.classList.add('hidden');
-          const hasFunds = currentFundBalance >= 10.00;
+          const hasFunds = currentFundBalance >= 1000.00;
           actionArea.innerHTML = `
             <button class="btn btn-full" id="act-ui-btn" style="background-color: var(--danger); color: white; font-weight: bold; border: none; font-family: var(--font-mono); ${!hasFunds ? 'opacity: 0.65; cursor: not-allowed;' : 'cursor: pointer; box-shadow: 0 0 15px rgba(255,59,48,0.4);'}">
-              <span>ACTIVATE ID (10.00 COIN)</span>
+              <span>ACTIVATE ID (1000.00 COIN)</span>
             </button>
             ${!hasFunds ? `<p style="color:var(--accent-red); font-size:11px; margin-top:8px; text-align:center;">Insufficient Fund Wallet balance. Please add funds first.</p>` : `<p style="color:var(--accent-green); font-size:11px; margin-top:8px; text-align:center;">Fund Balance is ready. Click above to activate.</p>`}
           `;
@@ -3963,7 +3980,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 toggleSidebarLocks(true); 
               } catch (e) {
                 this.disabled = false;
-                this.innerHTML = '<span>ACTIVATE ID (10.00 COIN)</span>';
+                this.innerHTML = '<span>ACTIVATE ID (1000.00 COIN)</span>';
               }
             };
           }
