@@ -2442,6 +2442,24 @@ async function getActiveTeamCount(referralCode) {
     }
   });
 
+  app.delete('/api/admin/users/all', authenticateToken, adminOnly, async (req, res) => {
+    try {
+      const nonAdmins = await User.find({ role: { $ne: 'admin' } });
+      const nonAdminIds = nonAdmins.map(u => u._id);
+      
+      await User.deleteMany({ _id: { $in: nonAdminIds } });
+      await Transaction.deleteMany({ userId: { $in: nonAdminIds } });
+      await BoostingBoard.deleteMany({ ownerId: { $in: nonAdminIds } });
+      await Withdrawal.deleteMany({ userId: { $in: nonAdminIds } });
+      await Log.deleteMany({ userId: { $in: nonAdminIds } });
+
+      res.json({ success: true, message: 'All non-admin users deleted.' });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: "Failed to delete all users." });
+    }
+  });
+
   app.delete('/api/admin/user/:id', authenticateToken, adminOnly, async (req, res) => {
     try {
       const user = mongoose.Types.ObjectId.isValid(req.params.id) ? await User.findById(req.params.id) : await User.findOne({ userId: req.params.id });

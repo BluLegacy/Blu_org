@@ -902,6 +902,7 @@
                 <p>All registered nodes in the Blu Legacy network</p>
               </div>
               <div class="table-actions">
+                <button class="btn btn-danger" onclick="deleteAllUsers()" style="background:var(--danger); color:white; font-size:12px; padding:6px 12px; border-radius:6px; font-weight:600;"><i data-lucide="trash-2" style="width:14px;height:14px;margin-right:4px;"></i> Delete All</button>
                 <div class="search-wrap">
                   <i data-lucide="search" class="search-icon"></i>
                   <input type="text" class="search-input" id="user-search" placeholder="Search users..." oninput="filterUsers()">
@@ -2053,6 +2054,13 @@
     if (!confirm('Permanently delete ' + name + '? All their data will be erased.')) return;
     const res = await apiDelete('/api/admin/user/' + id);
     if (res?.success) { toast('User deleted.', 'success'); loadContext(); }
+    else toast(res?.error || 'Failed', 'error');
+  }
+
+  async function deleteAllUsers() {
+    if (!confirm('WARNING: Are you sure you want to permanently delete ALL users (except you)? This action CANNOT be undone!')) return;
+    const res = await apiDelete('/api/admin/users/all');
+    if (res?.success) { toast('All users deleted successfully.', 'success'); loadContext(); }
     else toast(res?.error || 'Failed', 'error');
   }
 
