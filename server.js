@@ -680,7 +680,7 @@ async function bootstrap() {
       if (t.type === 'credit') {
         if (t.category === 'Direct Income') breakdown.direct += t.amount;
         if (t.category === 'Level Income') breakdown.level += t.amount;
-        if (t.category === 'Auto Income') breakdown.auto += t.amount;
+        if (t.category === 'Auto Income' || t.category === 'BOOSTING_INCOME') breakdown.auto += t.amount;
       }
     });
     breakdown.total = breakdown.direct + breakdown.level + breakdown.club + breakdown.rewards + breakdown.auto;
@@ -2914,7 +2914,7 @@ async function getActiveTeamCount(referralCode) {
         txid: "AUTO-RE-" + Date.now() + Math.random().toString(36).substr(2, 4),
         userId: owner._id,
         type: 'debit',
-        walletType: 'income',
+        walletType: 'system',
         status: 'Approved',
         category: 'AUTO_REENTRY',
         note: 'Automatic Re-Entry Deduction',
