@@ -2932,9 +2932,12 @@ async function getActiveTeamCount(referralCode) {
   }
 
   async function placeInBoostingMatrix(userId, sponsorRefCode, isReentry = false, isSystem = false) {
+    // 1. Find the oldest pending board across the entire company
+    let targetBoard = await BoostingBoard.findOne({ isCycled: false }).sort({ _id: 1 });
+
     let newBoard = null;
     
-    // 1. Give the real user their own empty board first
+    // 2. Give the real user their own empty board first
     if (userId) {
       newBoard = await BoostingBoard.create({
         boardId: "BRD-" + Date.now() + "-" + Math.random().toString(36).substr(2, 4).toUpperCase(),
@@ -2945,12 +2948,8 @@ async function getActiveTeamCount(referralCode) {
       });
     }
 
-    // 2. Find the oldest pending board across the entire company
-    let targetBoard = await BoostingBoard.findOne({ isCycled: false }).sort({ _id: 1 });
-    
     if (!targetBoard) {
-      if (newBoard) return newBoard;
-      return null;
+      return newBoard || null;
     }
 
     // 3. Find first empty position in targetBoard (1 to 6)
@@ -2984,12 +2983,25 @@ async function getActiveTeamCount(referralCode) {
   app.get('/api/user/boost/board', authenticateToken, async (req, res) => {
     try {
       const user = await User.findOne({ _id: req.user.id });
-      let currentBoard = await BoostingBoard.findOne({ ownerId: user._id }).sort({ _id: -1 }); // Get latest
+      
+      let currentBoard = null;
+      if (mongoose.Types.ObjectId.isValid(user._id)) {
+        currentBoard = await BoostingBoard.findOne({ ownerId: user._id }).sort({ _id: -1 });
+      } else {
+        const boards = await mongoose.connection.db.collection('boostingboards').find({ ownerId: user._id }).sort({ _id: -1 }).limit(1).toArray();
+        currentBoard = boards[0] || null;
+      }
       
       if (!currentBoard) {
         if (user.status === 'Active' || user.idStatus === 'Activated') {
           await placeInBoostingMatrix(user._id, user.parentReferral, false);
-          currentBoard = await BoostingBoard.findOne({ ownerId: user._id }).sort({ _id: -1 });
+          
+          if (mongoose.Types.ObjectId.isValid(user._id)) {
+            currentBoard = await BoostingBoard.findOne({ ownerId: user._id }).sort({ _id: -1 });
+          } else {
+            const newBoards = await mongoose.connection.db.collection('boostingboards').find({ ownerId: user._id }).sort({ _id: -1 }).limit(1).toArray();
+            currentBoard = newBoards[0] || null;
+          }
         } else {
           return res.json({ hasBoard: false });
         }
@@ -3017,7 +3029,9 @@ async function getActiveTeamCount(referralCode) {
       }
 
       // Total cycles stat
-      const totalCycles = await BoostingBoard.countDocuments({ ownerId: user._id, isCycled: true });
+      const totalCycles = mongoose.Types.ObjectId.isValid(user._id)
+        ? await BoostingBoard.countDocuments({ ownerId: user._id, isCycled: true })
+        : await mongoose.connection.db.collection('boostingboards').countDocuments({ ownerId: user._id, isCycled: true });
       const totalIncome = totalCycles * 50;
       
       // Calculate global pool size (approx 50 COIN per activated board including re-entries)
