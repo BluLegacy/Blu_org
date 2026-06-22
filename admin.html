@@ -1400,6 +1400,51 @@
 <!-- ==================== MODALS ==================== -->
 
   <!-- Fund Management Modal -->
+  <!-- BOOST ADJUST MODAL -->
+  <div class="modal-overlay" id="boost-adjust-modal">
+    <div class="modal-box" style="max-width: 400px;">
+      <div class="modal-header">
+        <h3>Adjust Boosting Income</h3>
+        <button class="modal-close" onclick="closeModal('boost-adjust-modal')"><i data-lucide="x" style="width:18px;height:18px"></i></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="boost-adjust-userid">
+        <div style="margin-bottom: 15px; font-size: 13px;">
+          User: <strong id="boost-adjust-name" style="color:var(--sky-primary)"></strong><br>
+          Current Boosting Income: <strong style="color:var(--gold)">$<span id="boost-adjust-current"></span></strong>
+        </div>
+        
+        <div class="input-group">
+          <label>Action</label>
+          <div class="input-wrapper">
+            <select id="boost-adjust-action" style="width: 100%; background: transparent; color: white; border: none; outline: none; appearance: none; padding: 5px;">
+              <option value="add" style="background:#111">Add COIN</option>
+              <option value="deduct" style="background:#111">Deduct COIN</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label>Amount (COIN)</label>
+          <div class="input-wrapper">
+            <input type="number" id="boost-adjust-amount" placeholder="e.g. 50" min="1" step="1">
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label>Remark / Reason</label>
+          <div class="input-wrapper">
+            <input type="text" id="boost-adjust-remark" placeholder="Optional remark">
+          </div>
+        </div>
+
+        <div style="margin-top: 20px;">
+          <button class="btn btn-primary btn-full sky-gradient-btn" onclick="submitBoostAdjust()">Submit Adjustment</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="modal-overlay" id="fund-modal">
     <div class="modal-box" style="max-width: 600px;">
       <div class="modal-header">
@@ -2469,9 +2514,14 @@
         <td>${s.cycledBoards}</td>
         <td><strong style="color:var(--gold)">$${s.totalIncome}</strong></td>
         <td>
-          <button class="btn btn-sm" style="background:${s.isBlocked ? 'var(--success)' : 'var(--danger)'}; color:white; padding:6px 12px; font-size:11px;" onclick="toggleBoostingStatus('${s.userId}')">
-            ${s.isBlocked ? 'Unblock Income' : 'Block Income'}
-          </button>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-sm" style="background:${s.isBlocked ? 'var(--success)' : 'var(--danger)'}; color:white; padding:6px 12px; font-size:11px;" onclick="toggleBoostingStatus('${s.userId}')">
+              ${s.isBlocked ? 'Unblock Income' : 'Block Income'}
+            </button>
+            <button class="btn btn-sm" style="background:var(--sky-primary); color:white; padding:6px 12px; font-size:11px;" onclick="openBoostAdjustModal('${s.userId}', '${s.name}', ${s.totalIncome})">
+              Adjust Income
+            </button>
+          </div>
         </td>
       </tr>
     `).join('');
@@ -2488,6 +2538,36 @@
       }
     } catch (e) {
       showToast('Error', 'Server error toggling status', 'error');
+    }
+  }
+
+  function openBoostAdjustModal(userId, name, currentIncome) {
+    document.getElementById('boost-adjust-userid').value = userId;
+    document.getElementById('boost-adjust-name').textContent = name;
+    document.getElementById('boost-adjust-current').textContent = currentIncome;
+    document.getElementById('boost-adjust-amount').value = '';
+    document.getElementById('boost-adjust-remark').value = '';
+    openModal('boost-adjust-modal');
+  }
+
+  async function submitBoostAdjust() {
+    const targetUserId = document.getElementById('boost-adjust-userid').value;
+    const actionType = document.getElementById('boost-adjust-action').value;
+    const amount = document.getElementById('boost-adjust-amount').value;
+    const remark = document.getElementById('boost-adjust-remark').value;
+
+    if (!amount || isNaN(amount) || amount <= 0) {
+      toast('Please enter a valid positive amount', 'error');
+      return;
+    }
+
+    const res = await apiPost('/api/admin/boost-adjust', { targetUserId, actionType, amount, remark });
+    if (res?.success) {
+      toast(res.message, 'success');
+      closeModal('boost-adjust-modal');
+      loadBoostingStats();
+    } else {
+      toast(res?.error || 'Action failed', 'error');
     }
   }
 

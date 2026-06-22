@@ -2637,14 +2637,18 @@ async function getActiveTeamCount(referralCode) {
         if (mongoose.Types.ObjectId.isValid(u._id)) {
           totalBoards = await BoostingBoard.countDocuments({ ownerId: u._id });
           cycledBoards = await BoostingBoard.countDocuments({ ownerId: u._id, isCycled: true });
-          boostingIncomeTx = await Transaction.find({ userId: u._id, category: 'BOOSTING_INCOME', type: 'credit', status: 'Approved' });
+          boostingIncomeTx = await Transaction.find({ userId: u._id, category: 'BOOSTING_INCOME', status: 'Approved' });
         } else {
           totalBoards = await mongoose.connection.db.collection('boostingboards').countDocuments({ ownerId: u._id });
           cycledBoards = await mongoose.connection.db.collection('boostingboards').countDocuments({ ownerId: u._id, isCycled: true });
-          boostingIncomeTx = await mongoose.connection.db.collection('transactions').find({ userId: u._id, category: 'BOOSTING_INCOME', type: 'credit', status: 'Approved' }).toArray();
+          boostingIncomeTx = await mongoose.connection.db.collection('transactions').find({ userId: u._id, category: 'BOOSTING_INCOME', status: 'Approved' }).toArray();
         }
 
-        const totalIncome = boostingIncomeTx.reduce((sum, tx) => sum + (tx.amount || 0), 0);
+        const totalIncome = boostingIncomeTx.reduce((sum, tx) => {
+          if (tx.type === 'credit') return sum + (tx.amount || 0);
+          if (tx.type === 'debit') return sum - (tx.amount || 0);
+          return sum;
+        }, 0);
 
         stats.push({
           dbId: u._id ? u._id.toString() : (u.id ? u.id.toString() : ''),
@@ -2678,6 +2682,41 @@ async function getActiveTeamCount(referralCode) {
     } catch (e) {
       console.error(e);
       res.status(500).json({ error: "Server error toggling boosting status." });
+    }
+  });
+
+  // Admin: Adjust Boosting Income manually
+  app.post('/api/admin/boost-adjust', authenticateToken, adminOnly, async (req, res) => {
+    try {
+      const { targetUserId, actionType, amount, remark } = req.body;
+      let targetUser = mongoose.Types.ObjectId.isValid(targetUserId) ? await User.findById(targetUserId) : await User.findOne({ userId: targetUserId });
+      if (!targetUser) return res.status(404).json({ error: "User not found." });
+
+      const parsedAmount = parseFloat(amount);
+      if (!['add', 'deduct'].includes(actionType) || isNaN(parsedAmount) || parsedAmount <= 0) {
+        return res.status(400).json({ error: "Valid positive amount and action type required." });
+      }
+
+      const adminName = req.user.username || 'Admin';
+      const txid = "BOOST-ADJ-" + Date.now() + "-" + Math.random().toString(36).substr(2, 4).toUpperCase();
+      const type = actionType === 'add' ? 'credit' : 'debit';
+
+      await Transaction.create({
+        txid,
+        userId: targetUser._id,
+        type,
+        walletType: 'income',
+        status: 'Approved',
+        category: 'BOOSTING_INCOME',
+        note: `Manual Adjustment by ${adminName}: ${remark || (actionType === 'add' ? 'Added' : 'Deducted')}`,
+        amount: parsedAmount,
+        date: new Date()
+      });
+
+      res.json({ success: true, message: `Successfully ${actionType === 'add' ? 'added' : 'deducted'} ${parsedAmount} COIN to ${targetUser.userId}'s Boosting Income.` });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: "Server error adjusting boosting income." });
     }
   });
 
@@ -3032,7 +3071,17 @@ async function getActiveTeamCount(referralCode) {
       const totalCycles = mongoose.Types.ObjectId.isValid(user._id)
         ? await BoostingBoard.countDocuments({ ownerId: user._id, isCycled: true })
         : await mongoose.connection.db.collection('boostingboards').countDocuments({ ownerId: user._id, isCycled: true });
-      const totalIncome = totalCycles * 50;
+      let boostingIncomeTx = [];
+      if (mongoose.Types.ObjectId.isValid(user._id)) {
+        boostingIncomeTx = await Transaction.find({ userId: user._id, category: 'BOOSTING_INCOME', status: 'Approved' });
+      } else {
+        boostingIncomeTx = await mongoose.connection.db.collection('transactions').find({ userId: user._id, category: 'BOOSTING_INCOME', status: 'Approved' }).toArray();
+      }
+      const totalIncome = boostingIncomeTx.reduce((sum, tx) => {
+        if (tx.type === 'credit') return sum + (tx.amount || 0);
+        if (tx.type === 'debit') return sum - (tx.amount || 0);
+        return sum;
+      }, 0);
       
       // Calculate global pool size (approx 50 COIN per activated board including re-entries)
       const allBoardsCount = await BoostingBoard.countDocuments();
