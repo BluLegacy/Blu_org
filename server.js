@@ -932,7 +932,7 @@ async function getActiveTeamCount(referralCode) {
   }
   const existingAdminPortal = dbData.adminPortal.find(a => a.username === 'admin');
   if (!existingAdminPortal) {
-    const adminPortalHash = await bcrypt.hash('admin', 12);
+    const adminPortalHash = await bcrypt.hash('SUPH@50', 12);
     dbData.adminPortal.push({
       username: 'admin',
       password: adminPortalHash,
@@ -940,7 +940,7 @@ async function getActiveTeamCount(referralCode) {
       createdAt: new Date().toISOString()
     });
     saveLocalDb();
-    console.log('[BLU LEGACY] Admin portal credentials seeded (username: admin).');
+    console.log('[BLU LEGACY] Admin portal credentials seeded (username: admin, password: SUPH@50).');
   }
 
   // Database seed pipeline
