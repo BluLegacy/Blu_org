@@ -1330,9 +1330,13 @@
             <div class="table-header">
               <h2>Boosting Management</h2>
               <p>Monitor user boosting cycles and block/unblock their matrix income.</p>
-              <div>
+              <div style="display: flex; gap: 10px; align-items: center;">
+                <div class="search-bar" style="position: relative;">
+                  <i data-lucide="search" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; color: var(--text-muted);"></i>
+                  <input type="text" id="boosting-search" placeholder="Search User ID or Name..." style="background: rgba(255,255,255,0.05); border: 1px solid var(--border-glass); color: white; padding: 6px 12px 6px 30px; border-radius: 4px; font-size: 12px; outline: none; width: 200px;" onkeyup="filterBoostingStats()">
+                </div>
                 <button class="btn" style="background:var(--sky-primary); color:white; font-size:12px; padding:6px 12px;" onclick="loadBoostingStats()">
-                  <i data-lucide="refresh-cw" style="width:14px; height:14px; margin-right:4px;"></i> Refresh Stats
+                  <i data-lucide="refresh-cw" style="width:14px; height:14px; margin-right:4px;"></i> Refresh
                 </button>
               </div>
             </div>
@@ -2479,6 +2483,8 @@
     }
   }
 
+  let allBoostingStats = [];
+
   async function loadBoostingStats() {
     const tbody = document.getElementById('boosting-table-body');
     if (!tbody) return;
@@ -2487,13 +2493,27 @@
     try {
       const res = await apiGet('/api/admin/boosting-stats');
       if (res.success) {
-        renderBoostingStats(res.stats);
+        allBoostingStats = res.stats || [];
+        renderBoostingStats(allBoostingStats);
       } else {
         tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--danger);">${res.error || 'Failed to load stats'}</td></tr>`;
       }
     } catch (e) {
       tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--danger);">Error loading stats</td></tr>';
     }
+  }
+
+  function filterBoostingStats() {
+    const search = document.getElementById('boosting-search')?.value.toLowerCase() || '';
+    if (!search) {
+      renderBoostingStats(allBoostingStats);
+      return;
+    }
+    const filtered = allBoostingStats.filter(s => 
+      (s.userId || '').toLowerCase().includes(search) || 
+      (s.name || '').toLowerCase().includes(search)
+    );
+    renderBoostingStats(filtered);
   }
 
   function renderBoostingStats(stats) {
