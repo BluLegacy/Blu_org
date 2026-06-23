@@ -2006,7 +2006,7 @@
           <section id="view-boosting-income" class="router-view hidden">
             <div class="section-header">
               <h3>Boosting Income Matrix</h3>
-              <p>Automatically entered upon ID Activation. 50 COIN goes to the pool. Cycle out with 6 members to earn 50 COIN + infinite automatic re-entries!</p>
+              <p>Automatically entered upon ID Activation. The global structure fills automatically. You will receive Total Boosting Income automatically over time.</p>
             </div>
 
             <!-- Stats -->
@@ -2047,6 +2047,25 @@
                   <div style="color: var(--sky-primary);">Global Position: <strong id="boost-global-pos" style="color: white;">#--</strong></div>
                   <div style="color: var(--text-muted);">Status: <strong id="boost-status" style="color: var(--accent-gold);">In Progress</strong></div>
                 </div>
+              </div>
+            </div>
+
+            <!-- Boosting History -->
+            <div style="margin-top: 30px;">
+              <h4 style="color: var(--sky-primary); margin-bottom: 15px;">Boosting Income History</h4>
+              <div class="table-container">
+                <table style="width:100%; border-collapse: collapse; text-align: left;">
+                  <thead>
+                    <tr style="border-bottom: 1px solid var(--border-glass);">
+                      <th style="padding: 10px; color: var(--text-muted); font-weight: normal;">Date</th>
+                      <th style="padding: 10px; color: var(--text-muted); font-weight: normal;">Amount</th>
+                      <th style="padding: 10px; color: var(--text-muted); font-weight: normal;">Description</th>
+                    </tr>
+                  </thead>
+                  <tbody id="boosting-history-tbody">
+                    <tr><td colspan="3" style="text-align:center; padding: 20px; color: var(--text-muted);">Loading history...</td></tr>
+                  </tbody>
+                </table>
               </div>
             </div>
 

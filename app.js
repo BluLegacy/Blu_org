@@ -1160,6 +1160,23 @@ document.addEventListener('DOMContentLoaded', () => {
           }
           slotsEl.innerHTML = slotsHtml;
         }
+
+        const historyTbody = document.getElementById('boosting-history-tbody');
+        if (historyTbody) {
+          if (res.history && res.history.length > 0) {
+            // Sort history by date descending
+            const sortedHistory = res.history.sort((a, b) => new Date(b.date) - new Date(a.date));
+            historyTbody.innerHTML = sortedHistory.map(tx => `
+              <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                <td style="padding: 10px; font-size: 13px;">${new Date(tx.date).toLocaleDateString()}</td>
+                <td style="padding: 10px; color: var(--success); font-weight: bold;">+${tx.amount} COIN</td>
+                <td style="padding: 10px; font-size: 13px; color: var(--text-muted);">${tx.note || 'Boosting Income'}</td>
+              </tr>
+            `).join('');
+          } else {
+            historyTbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 20px; color: var(--text-muted);">No history available</td></tr>';
+          }
+        }
       }
     } catch (e) {
       console.error('Error loading boosting data:', e);

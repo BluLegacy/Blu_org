@@ -558,7 +558,10 @@ async function bootstrap() {
       date: { type: Date, default: Date.now }
     }],
     isCycled: { type: Boolean, default: false },
-    cycleDate: { type: Date }
+    cycleDate: { type: Date },
+    isReentry: { type: Boolean, default: false },
+    createdAt: { type: Date, default: Date.now },
+    payoutsReceived: { type: [Number], default: [] }
   });
   const BoostingBoard = mongoose.model('BoostingBoard', BoostingBoardSchema);
 
@@ -2945,37 +2948,11 @@ async function getActiveTeamCount(referralCode) {
     }
 
     if (owner && !owner.isBoostingBlocked) {
-      // 1. Credit 50 COIN to income wallet
-      await Transaction.create({
-        txid: "BOOST-INC-" + Date.now() + Math.random().toString(36).substr(2, 4),
-        userId: owner._id,
-        type: 'credit',
-        walletType: 'income',
-        status: 'Approved',
-        category: 'BOOSTING_INCOME',
-        note: 'Global Boosting Cycle Income',
-        amount: 50,
-        date: new Date()
-      });
-
-      // 2. Trigger Re-entry Deduction record
-      await Transaction.create({
-        txid: "AUTO-RE-" + Date.now() + Math.random().toString(36).substr(2, 4),
-        userId: owner._id,
-        type: 'debit',
-        walletType: 'system',
-        status: 'Approved',
-        category: 'AUTO_REENTRY',
-        note: 'Automatic Re-Entry Deduction',
-        amount: 50,
-        date: new Date()
-      });
-
-      // 3. Trigger Re-entry placement
+      // Trigger Re-entry placement (structure only, no coins involved)
       await placeInBoostingMatrix(owner._id, owner.parentReferral, true);
     }
 
-    // 4. Generate 2 New System Positions to increase Boosting Speed
+    // Generate 2 New System Positions to increase Boosting Speed
     await placeInBoostingMatrix(null, null, true, true);
     await placeInBoostingMatrix(null, null, true, true);
   }
@@ -2993,7 +2970,10 @@ async function getActiveTeamCount(referralCode) {
         ownerId: userId,
         sponsorId: null, // Global queue doesn't use sponsors
         members: [],
-        isCycled: false
+        isCycled: false,
+        isReentry: isReentry,
+        createdAt: new Date(),
+        payoutsReceived: []
       });
     }
 
@@ -3107,7 +3087,8 @@ async function getActiveTeamCount(referralCode) {
         totalCycles,
         totalIncome,
         globalPool,
-        globalPosition
+        globalPosition,
+        history: boostingIncomeTx
       });
     } catch (err) {
       console.error(err);
@@ -3319,6 +3300,59 @@ async function getActiveTeamCount(referralCode) {
     }
     res.sendFile(path.join(__dirname, 'index.html'));
   });
+  // ============================================================
+  // TIME-BASED BOOSTING ENGINE
+  // ============================================================
+  setInterval(async () => {
+    try {
+      // Find all main boards (not re-entry)
+      const boards = await BoostingBoard.find({ isReentry: false });
+      const now = Date.now();
+      
+      for (const board of boards) {
+        const owner = await User.findById(board.ownerId);
+        if (!owner || owner.isBoostingBlocked) continue;
+
+        // Fallback to _id.getTimestamp() if createdAt is missing
+        const creationTime = board.createdAt ? new Date(board.createdAt).getTime() : board._id.getTimestamp().getTime();
+        const daysPassed = Math.floor((now - creationTime) / (1000 * 60 * 60 * 24));
+        const milestones = [6, 13, 24, 45];
+        let updated = false;
+
+        for (const milestone of milestones) {
+          if (daysPassed >= milestone && !board.payoutsReceived.includes(milestone)) {
+            // Process Payout
+            await Transaction.create({
+              txid: "BST-TIME-" + milestone + "D-" + Date.now() + Math.random().toString(36).substr(2, 4).toUpperCase(),
+              userId: owner._id,
+              type: 'credit',
+              walletType: 'income',
+              status: 'Approved',
+              category: 'BOOSTING_INCOME',
+              note: `Global Boosting Income (Day ${milestone})`,
+              amount: 50,
+              date: new Date()
+            });
+
+            owner.balance += 50;
+            board.payoutsReceived.push(milestone);
+            updated = true;
+
+            // Notify User via Socket
+            io.to(owner._id.toString()).emit('notification', { message: `You received 50 COIN for Day ${milestone} Boosting Income!` });
+          }
+        }
+        
+        if (updated) {
+          await owner.save();
+          await board.save();
+        }
+      }
+    } catch (e) {
+      console.error("[BLU LEGACY] Error in Time-Based Boosting Engine:", e);
+    }
+  }, 60 * 60 * 1000); // Check every 1 hour
+
   if (!process.env.VERCEL) {
     server.listen(PORT, '0.0.0.0', async () => {
       console.log(`[BLU LEGACY] Platform Server listening actively on port ${PORT}`);
