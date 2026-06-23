@@ -3950,6 +3950,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         authContainer?.classList.add('hidden');
         appShell?.classList.remove('hidden');
+        if (typeof lucide !== 'undefined') lucide.createIcons();
 
         loadShellUserInfo();
         routeTo('dashboard');
@@ -3962,11 +3963,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         authContainer?.classList.remove('hidden');
         appShell?.classList.add('hidden');
+        if (typeof lucide !== 'undefined') lucide.createIcons();
       }
     } else {
       // No token — show login
       authContainer?.classList.remove('hidden');
       appShell?.classList.add('hidden');
+      if (typeof lucide !== 'undefined') lucide.createIcons();
     }
 
     if (wakingTimeout) clearTimeout(wakingTimeout);
