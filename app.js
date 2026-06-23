@@ -514,6 +514,13 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    const submitBtn = loginForm.querySelector('button[type="submit"]');
+    const originalBtnText = submitBtn ? submitBtn.innerHTML : 'Secure Login';
+    if (submitBtn) {
+      submitBtn.innerHTML = '<i data-lucide="loader" class="spin"></i> Connecting...';
+      submitBtn.disabled = true;
+    }
+
     try {
       const data = await apiCall('/api/auth/login', 'POST', { identifier, password });
       jwtToken = data.token;
@@ -522,16 +529,19 @@ document.addEventListener('DOMContentLoaded', () => {
       localStorage.setItem('blulegacy_jwt_token', jwtToken);
       showToast("Auth Approved", `Session synchronized for ${currentUser.name}`, "success");
       
-      initRealTimeCommunications(jwtToken);
-      await fetchUserContext();
+      document.getElementById('login-identifier').value = '';
+      document.getElementById('login-password').value = '';
       
-      authContainer?.classList.add('hidden');
-      appShell?.classList.remove('hidden');
-
-      loadShellUserInfo();
-      routeTo('dashboard');
+      checkSessionAuth();
     } catch (err) {
-      showToast("Auth Failed", err.message, "error");
+      showToast("Access Denied", err.message, "error");
+      window.generateCaptcha();
+    } finally {
+      if (submitBtn) {
+        submitBtn.innerHTML = originalBtnText;
+        submitBtn.disabled = false;
+        lucide.createIcons();
+      }
     }
   };
 
@@ -3923,6 +3933,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function checkSessionAuth() {
     const preloader = document.getElementById('preloader');
+    const wakingMsg = document.getElementById('preloader-waking');
+    
+    let wakingTimeout;
+    if (wakingMsg) {
+      wakingTimeout = setTimeout(() => {
+        wakingMsg.style.display = 'block';
+      }, 3000);
+    }
 
     if (jwtToken) {
       try {
@@ -3950,6 +3968,8 @@ document.addEventListener('DOMContentLoaded', () => {
       authContainer?.classList.remove('hidden');
       appShell?.classList.add('hidden');
     }
+
+    if (wakingTimeout) clearTimeout(wakingTimeout);
 
     // Dissolve Preloader Screen
     if (preloader) {
