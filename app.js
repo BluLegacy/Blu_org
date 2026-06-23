@@ -501,7 +501,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const identifier = document.getElementById('login-identifier').value.trim();
     const password = document.getElementById('login-password').value;
     const rememberMe = document.getElementById('remember-me').checked;
-    const captchaInput = document.getElementById('login-captcha').value;
+    const captchaEl = document.getElementById('login-captcha');
+    if (!captchaEl) {
+      showToast("Update Required", "Please refresh your browser (Clear Cache or Ctrl+F5) to load the latest security update.", "warning");
+      return;
+    }
+    const captchaInput = captchaEl.value;
 
     if (parseInt(captchaInput) !== window.captchaAnswer) {
       showToast("Security Check Failed", "Incorrect answer. Please try again.", "error");
