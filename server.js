@@ -642,19 +642,19 @@ async function bootstrap() {
     const levels = [
       { level:1,  reward:175,      releaseDays:2,   requiredDirects:0,   dailyTransferPct:0 },
       { level:2,  reward:350,      releaseDays:6,   requiredDirects:1,   dailyTransferPct:0 },
-      { level:3,  reward:700,      releaseDays:12,  requiredDirects:3,   dailyTransferPct:0 },
+      { level:3,  reward:700,      releaseDays:13,  requiredDirects:3,   dailyTransferPct:0 },
       { level:4,  reward:1400,     releaseDays:20,  requiredDirects:6,   dailyTransferPct:0 },
       { level:5,  reward:2800,     releaseDays:30,  requiredDirects:10,  dailyTransferPct:0 },
-      { level:6,  reward:2800,     releaseDays:42,  requiredDirects:0,  dailyTransferPct:1 },
-      { level:7,  reward:5600,     releaseDays:56,  requiredDirects:0,  dailyTransferPct:1 },
-      { level:8,  reward:11200,    releaseDays:72,  requiredDirects:0,  dailyTransferPct:1 },
-      { level:9,  reward:22400,    releaseDays:90,  requiredDirects:0,  dailyTransferPct:0.5 },
-      { level:10, reward:44800,    releaseDays:110, requiredDirects:0,  dailyTransferPct:0.5 },
-      { level:11, reward:89600,    releaseDays:132, requiredDirects:0,  dailyTransferPct:0.25 },
-      { level:12, reward:179200,   releaseDays:156, requiredDirects:0,  dailyTransferPct:0.25 },
-      { level:13, reward:358400,   releaseDays:182, requiredDirects:0,  dailyTransferPct:0.12 },
-      { level:14, reward:716800,   releaseDays:210, requiredDirects:0,  dailyTransferPct:0.12 },
-      { level:15, reward:1433600,  releaseDays:240, requiredDirects:0,  dailyTransferPct:0.06 }
+      { level:6,  reward:2800,     releaseDays:60,  requiredDirects:0,  dailyTransferPct:1 },
+      { level:7,  reward:5600,     releaseDays:100, requiredDirects:0,  dailyTransferPct:1 },
+      { level:8,  reward:11200,    releaseDays:145, requiredDirects:0,  dailyTransferPct:1 },
+      { level:9,  reward:22400,    releaseDays:190, requiredDirects:0,  dailyTransferPct:0.5 },
+      { level:10, reward:44800,    releaseDays:240, requiredDirects:0,  dailyTransferPct:0.5 },
+      { level:11, reward:89600,    releaseDays:300, requiredDirects:0,  dailyTransferPct:0.25 },
+      { level:12, reward:179200,   releaseDays:360, requiredDirects:0,  dailyTransferPct:0.25 },
+      { level:13, reward:358400,   releaseDays:420, requiredDirects:0,  dailyTransferPct:0.12 },
+      { level:14, reward:716800,   releaseDays:500, requiredDirects:0,  dailyTransferPct:0.12 },
+      { level:15, reward:1433600,  releaseDays:600, requiredDirects:0,  dailyTransferPct:0.06 }
     ];
     for (const l of levels) {
       if (l.level <= existingCount) continue; // skip already seeded levels
@@ -3418,6 +3418,31 @@ async function getActiveTeamCount(referralCode) {
             console.warn('[MIGRATION] MongoDB updateMany skipped:', mongoErr.message);
           }
         }
+
+        // Auto Blaster release days migration
+        try {
+          const allRewards = await AutoBlasterReward.find();
+          const newReleaseMap = {
+            1: 2, 2: 6, 3: 13, 4: 20, 5: 30, 6: 60, 7: 100, 8: 145,
+            9: 190, 10: 240, 11: 300, 12: 360, 13: 420, 14: 500, 15: 600
+          };
+          let abFixed = 0;
+          for (const reward of allRewards) {
+            const exp = newReleaseMap[reward.level];
+            if (exp && reward.releaseDays !== exp) {
+              reward.releaseDays = exp;
+              const scheduled = new Date(reward.activationDate);
+              scheduled.setDate(scheduled.getDate() + exp);
+              reward.scheduledCreditDate = scheduled;
+              await reward.save();
+              abFixed++;
+            }
+          }
+          if (abFixed > 0) console.log(`[MIGRATION] Updated ${abFixed} Auto Blaster schedules.`);
+        } catch(e) {
+          console.warn('[MIGRATION] Auto Blaster skipped:', e.message);
+        }
+
       } catch (migErr) {
         console.error('[MIGRATION ERROR]', migErr.message);
       }
