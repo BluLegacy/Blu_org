@@ -643,8 +643,8 @@ async function bootstrap() {
       { level:1,  reward:175,      releaseDays:2,   requiredDirects:0,   dailyTransferPct:0 },
       { level:2,  reward:350,      releaseDays:6,   requiredDirects:1,   dailyTransferPct:0 },
       { level:3,  reward:700,      releaseDays:13,  requiredDirects:3,   dailyTransferPct:0 },
-      { level:4,  reward:1400,     releaseDays:20,  requiredDirects:6,   dailyTransferPct:0 },
-      { level:5,  reward:2800,     releaseDays:30,  requiredDirects:10,  dailyTransferPct:0 },
+      { level:4,  reward:1400,     releaseDays:20,  requiredDirects:7,   dailyTransferPct:0 },
+      { level:5,  reward:2800,     releaseDays:30,  requiredDirects:15,  dailyTransferPct:0 },
       { level:6,  reward:2800,     releaseDays:60,  requiredDirects:0,  dailyTransferPct:1 },
       { level:7,  reward:5600,     releaseDays:100, requiredDirects:0,  dailyTransferPct:1 },
       { level:8,  reward:11200,    releaseDays:145, requiredDirects:0,  dailyTransferPct:1 },
@@ -3426,19 +3426,32 @@ async function getActiveTeamCount(referralCode) {
             1: 2, 2: 6, 3: 13, 4: 20, 5: 30, 6: 60, 7: 100, 8: 145,
             9: 190, 10: 240, 11: 300, 12: 360, 13: 420, 14: 500, 15: 600
           };
+          const newDirectsMap = {
+            1: 0, 2: 1, 3: 3, 4: 7, 5: 15
+          };
           let abFixed = 0;
           for (const reward of allRewards) {
-            const exp = newReleaseMap[reward.level];
-            if (exp && reward.releaseDays !== exp) {
-              reward.releaseDays = exp;
+            let changed = false;
+            const expRelease = newReleaseMap[reward.level];
+            const expDirects = newDirectsMap[reward.level];
+
+            if (expRelease && reward.releaseDays !== expRelease) {
+              reward.releaseDays = expRelease;
               const scheduled = new Date(reward.activationDate);
-              scheduled.setDate(scheduled.getDate() + exp);
+              scheduled.setDate(scheduled.getDate() + expRelease);
               reward.scheduledCreditDate = scheduled;
+              changed = true;
+            }
+            if (expDirects !== undefined && reward.requiredDirects !== expDirects) {
+              reward.requiredDirects = expDirects;
+              changed = true;
+            }
+            if (changed) {
               await reward.save();
               abFixed++;
             }
           }
-          if (abFixed > 0) console.log(`[MIGRATION] Updated ${abFixed} Auto Blaster schedules.`);
+          if (abFixed > 0) console.log(`[MIGRATION] Updated ${abFixed} Auto Blaster schedules/directs.`);
         } catch(e) {
           console.warn('[MIGRATION] Auto Blaster skipped:', e.message);
         }
