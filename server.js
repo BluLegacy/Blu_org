@@ -8,6 +8,13 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 const net = require('net');
+const cloudinary = require('cloudinary').v2;
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
 const helmet = require('helmet');
 const compression = require('compression');
 
@@ -1547,10 +1554,24 @@ async function getActiveTeamCount(referralCode) {
       if (!txid || txid.trim().length < 5) return res.status(400).json({ error: 'A valid Transaction Hash (TXID) is required.' });
       const existing = await DepositRequest.findOne({ txid: txid.trim() });
       if (existing) return res.status(400).json({ error: 'This Transaction Hash has already been submitted. Duplicate deposits are not allowed.' });
+
+      let finalScreenshot = screenshot || '';
+      if (finalScreenshot && finalScreenshot.startsWith('data:image')) {
+        try {
+          const uploadRes = await cloudinary.uploader.upload(finalScreenshot, {
+            folder: 'blu_deposits'
+          });
+          finalScreenshot = uploadRes.secure_url;
+        } catch (err) {
+          console.error('[Cloudinary Upload Error]', err);
+          // Fallback to saving raw base64 if cloudinary fails or isn't configured properly
+        }
+      }
+
       await DepositRequest.create({
         id: 'DEP-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4).toUpperCase(),
         userId: user._id, userPublicId: user.userId, userName: user.name, userEmail: user.email,
-        amount: parsedAmount, txid: txid.trim(), screenshot: screenshot || '', status: 'Pending', createdAt: new Date()
+        amount: parsedAmount, txid: txid.trim(), screenshot: finalScreenshot, status: 'Pending', createdAt: new Date()
       });
       io.to('admin_room').emit('new_deposit_request', { userId: user.userId, name: user.name, txid, amount: parsedAmount });
       broadcastAdminStats();
