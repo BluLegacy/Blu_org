@@ -312,6 +312,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     renderViewData(viewName);
     sidebar?.classList.remove('mobile-active');
+
+    // Always refresh icons after view switch to ensure header icons render on mobile
+    if (typeof lucide !== 'undefined') lucide.createIcons();
   }
 
   function toggleSidebarLocks(isActive) {
@@ -533,6 +536,8 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('login-password').value = '';
       
       checkSessionAuth();
+      // Delayed icon refresh to guarantee mobile header icons appear
+      setTimeout(() => { if (typeof lucide !== 'undefined') lucide.createIcons(); }, 500);
     } catch (err) {
       showToast("Access Denied", err.message, "error");
       window.generateCaptcha();
@@ -3954,6 +3959,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         loadShellUserInfo();
         routeTo('dashboard');
+
+        // Ensure header icons (menu, refresh, bell) render on mobile after async rendering
+        setTimeout(() => { if (typeof lucide !== 'undefined') lucide.createIcons(); }, 300);
+        setTimeout(() => { if (typeof lucide !== 'undefined') lucide.createIcons(); }, 1500);
       } catch (e) {
         // Token is expired or invalid — clear it and show login
         localStorage.removeItem('blulegacy_jwt_token');
