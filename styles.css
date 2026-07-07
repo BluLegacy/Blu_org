@@ -1102,6 +1102,12 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--sky-primary);
   border-color: var(--border-sky);
 }
+.icon-btn svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  flex-shrink: 0;
+}
 
 .bell-badge {
   position: absolute;
