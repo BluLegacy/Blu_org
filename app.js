@@ -4449,5 +4449,27 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
+  // ==========================================================================
+  // INACTIVITY / TAB SWITCH AUTO LOGOUT
+  // ==========================================================================
+  let inactivityTimer = null;
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      // User minimized tab or switched away -> Start 1 min timer
+      inactivityTimer = setTimeout(() => {
+        if (jwtToken) {
+          logout();
+          showToast('Session Expired', 'You have been automatically logged out due to inactivity.', 'error');
+        }
+      }, 60000); // 1 minute = 60,000 ms
+    } else {
+      // User returned -> Cancel timer
+      if (inactivityTimer) {
+        clearTimeout(inactivityTimer);
+        inactivityTimer = null;
+      }
+    }
+  });
+
   checkSessionAuth();
 });
