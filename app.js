@@ -886,8 +886,6 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       renderViewData('dashboard');
     }
-    
-    showToast("Refreshed", "Dashboard data synced.", "success");
   };
 
   // ======== DEPOSIT PAGE RENDERER & HANDLERS ========
