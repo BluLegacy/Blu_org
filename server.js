@@ -693,7 +693,24 @@ async function bootstrap() {
         if (t.category === 'Auto Income' || t.category === 'BOOSTING_INCOME') breakdown.auto += t.amount;
       }
     });
-    breakdown.total = breakdown.direct + breakdown.level + breakdown.club + breakdown.rewards + breakdown.auto;
+
+    // User requested explicitly: Total Earnings = Withdraw Wallet + Total Withdrawals + Auto Blaster Wallet
+    const balance = await calculateUserBalance(userId);
+    
+    const withdrawals = await Withdrawal.find({ userId });
+    const totalWithdrawal = withdrawals
+      .filter(w => w.status === 'Approved' || w.status === 'Completed')
+      .reduce((sum, w) => sum + w.amount, 0);
+
+    let autoBlasterBalance = 0;
+    const abRecords = await AutoBlasterReward.find({ userId });
+    for (const rec of abRecords) {
+      if (['Unlocked','Locked','Transferring'].includes(rec.status) && rec.creditedDate) {
+        autoBlasterBalance += (rec.reward - (rec.transferredAmount || 0));
+      }
+    }
+
+    breakdown.total = balance + totalWithdrawal + autoBlasterBalance;
     return breakdown;
   }
 
