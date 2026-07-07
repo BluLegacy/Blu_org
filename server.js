@@ -888,7 +888,10 @@ async function getActiveTeamCount(referralCode) {
         continue;
       }
 
-      const amount = levelRates[level - 1];
+      const baseAmount = levelRates[level - 1];
+      const deductionAmount = baseAmount * 0.15;
+      const netAmount = baseAmount - deductionAmount;
+      
       const category = level === 1 ? "Direct Income" : "Level Income";
       const txid = "MLM-" + Math.random().toString(36).substr(2, 7).toUpperCase();
 
@@ -899,19 +902,19 @@ async function getActiveTeamCount(referralCode) {
         status: "Approved",
         category: category,
         walletType: "income",
-        note: `Level ${level} commission from node ${activatedUser.name} (${activatedUser.userId})`,
-        amount: amount,
+        note: `Level ${level} commission from node ${activatedUser.name} (${activatedUser.userId}) (15% platform fee applied: -${deductionAmount} COIN)`,
+        amount: netAmount,
         date: timestamp
       });
 
       await Notification.create({
         id: "not-" + Date.now() + "-" + level,
         userId: sponsor._id.toString(),
-        message: `🎯 ${category} {amount.toFixed(2)} credited! Downline node ${activatedUser.userId} activated.`,
+        message: `🎯 ${category} ${netAmount.toFixed(2)} credited! Downline node ${activatedUser.userId} activated.`,
         time: timestamp
       });
 
-      io.to(sponsor._id.toString()).emit('notification', { message: `Level ${level} commission of {amount.toFixed(2)} credited!` });
+      io.to(sponsor._id.toString()).emit('notification', { message: `Level ${level} commission of ${netAmount.toFixed(2)} credited!` });
       io.to(sponsor._id.toString()).emit('balance_update');
 
       currentSponsorId = sponsor.parentReferral;
@@ -3287,6 +3290,10 @@ async function getActiveTeamCount(referralCode) {
       const txid = 'AB-' + Date.now() + '-' + Math.random().toString(36).substr(2,5).toUpperCase();
       const now = new Date();
 
+      const requestedAmount = amount;
+      const deductionAmount = requestedAmount * 0.15;
+      const netAmount = requestedAmount - deductionAmount;
+
       // Credit income wallet
       await Transaction.create({
         txid,
@@ -3295,8 +3302,8 @@ async function getActiveTeamCount(referralCode) {
         walletType: 'income',
         status: 'Approved',
         category: 'Auto Blaster',
-        note: `Level ${level} Auto Blaster reward transfer`,
-        amount,
+        note: `Level ${level} Auto Blaster reward transfer (15% platform fee applied: -${deductionAmount} COIN)`,
+        amount: netAmount,
         date: now
       });
 
