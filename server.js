@@ -889,7 +889,7 @@ async function getActiveTeamCount(referralCode) {
       }
 
       const baseAmount = levelRates[level - 1];
-      const deductionAmount = baseAmount * 0.15;
+      const deductionAmount = baseAmount * 0.10;
       const netAmount = baseAmount - deductionAmount;
       
       const category = level === 1 ? "Direct Income" : "Level Income";
@@ -902,7 +902,7 @@ async function getActiveTeamCount(referralCode) {
         status: "Approved",
         category: category,
         walletType: "income",
-        note: `Level ${level} commission from node ${activatedUser.name} (${activatedUser.userId}) (15% platform fee applied: -${deductionAmount} COIN)`,
+        note: `Level ${level} commission from node ${activatedUser.name} (${activatedUser.userId}) (10% platform fee applied: -${deductionAmount} COIN)`,
         amount: netAmount,
         date: timestamp
       });
@@ -1728,15 +1728,19 @@ async function getActiveTeamCount(referralCode) {
 
       const wthId = "WTH-" + Math.random().toString(36).substr(2, 7).toUpperCase();
 
+      // Apply 5% withdrawal tax
+      const taxAmount = amount * 0.05;
+      const netPayout = amount - taxAmount;
+
       await Withdrawal.create({
         id: wthId,
         userId: user._id,
-        amount,
+        amount: netPayout,
         destination,
         status: 'Pending'
       });
 
-      // Deduct balance immediately
+      // Deduct full amount from balance
       await Transaction.create({
         txid: wthId,
         userId: user._id,
@@ -1744,7 +1748,7 @@ async function getActiveTeamCount(referralCode) {
         status: "Approved",
         walletType: "income",
         category: "Withdrawal",
-        note: `Withdrawal request to ${destination}`,
+        note: `Withdrawal request to ${destination} (5% tax applied: -${taxAmount.toFixed(2)} COIN, payout: ${netPayout.toFixed(2)} COIN)`,
         amount: amount,
         date: new Date()
       });
@@ -3291,7 +3295,7 @@ async function getActiveTeamCount(referralCode) {
       const now = new Date();
 
       const requestedAmount = amount;
-      const deductionAmount = requestedAmount * 0.15;
+      const deductionAmount = requestedAmount * 0.10;
       const netAmount = requestedAmount - deductionAmount;
 
       // Credit income wallet
@@ -3302,7 +3306,7 @@ async function getActiveTeamCount(referralCode) {
         walletType: 'income',
         status: 'Approved',
         category: 'Auto Blaster',
-        note: `Level ${level} Auto Blaster reward transfer (15% platform fee applied: -${deductionAmount} COIN)`,
+        note: `Level ${level} Auto Blaster reward transfer (10% platform fee applied: -${deductionAmount} COIN)`,
         amount: netAmount,
         date: now
       });
