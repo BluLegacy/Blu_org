@@ -686,11 +686,19 @@ async function bootstrap() {
   async function calculateIncomeBreakdown(userId) {
     const txs = await Transaction.find({ userId, status: 'Approved' });
     const breakdown = { direct: 0, level: 0, club: 0, rewards: 0, auto: 0, total: 0 };
+    let autoBlasterTaxGap = 0;
+
     txs.forEach(t => {
       if (t.type === 'credit') {
         if (t.category === 'Direct Income') breakdown.direct += t.amount;
         if (t.category === 'Level Income') breakdown.level += t.amount;
-        if (t.category === 'Auto Income' || t.category === 'BOOSTING_INCOME') breakdown.auto += t.amount;
+        if (t.category === 'Auto Income' || t.category === 'BOOSTING_INCOME' || t.category === 'Auto Blaster') breakdown.auto += t.amount;
+        
+        // Calculate total tax paid on Auto Blaster transfers to prevent Total Earning from dropping
+        if (t.category === 'Auto Blaster' && t.note) {
+          const match = t.note.match(/-\s*([\d.]+)\s*COIN/);
+          if (match) autoBlasterTaxGap += parseFloat(match[1]);
+        }
       }
     });
 
@@ -710,7 +718,7 @@ async function bootstrap() {
       }
     }
 
-    breakdown.total = balance + totalWithdrawal + autoBlasterBalance;
+    breakdown.total = balance + totalWithdrawal + autoBlasterBalance + autoBlasterTaxGap;
     return breakdown;
   }
 
@@ -1266,7 +1274,7 @@ async function getActiveTeamCount(referralCode) {
       const startOfDay = new Date(istTime.getTime() - istOffsetMs);
       const allTxs = await Transaction.find({ userId: user._id });
       const todayIncome = allTxs
-        .filter(t => t.type === 'credit' && t.category.includes('Income') && new Date(t.date) >= startOfDay)
+        .filter(t => t.type === 'credit' && (t.category.includes('Income') || t.category === 'Auto Blaster') && new Date(t.date) >= startOfDay)
         .reduce((sum, t) => sum + t.amount, 0);
 
       const notifications = await Notification.find({ $or: [{ userId: user._id.toString() }, { userId: 'all' }] }).sort({ time: -1 });
